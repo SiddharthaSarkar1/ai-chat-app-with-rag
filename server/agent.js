@@ -5,8 +5,10 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
 import { Document } from "@langchain/core/documents";
 import { MistralAIEmbeddings } from "@langchain/mistralai";
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
+import { tool } from '@langchain/core/tools';
 
 import data from "./dummyData/data.js"
+import z from "zod";
 
 
 dotenv.config();
@@ -28,26 +30,46 @@ const embeddings = new MistralAIEmbeddings({
 });
 
 const vectorstore = new MemoryVectorStore(embeddings)
-   
+
 await vectorstore.addDocuments(chunks)
 
-// const llm = new ChatMistralAI({
-//     apiKey: process.env.MISTRAL_API_KEY,
-//     modelName: "mistral-small-2506"
-// })
+// const retrieveDocs = await vectorstore.similaritySearch(
+//     "What was the finish time of Norris?",
+//     1
+// )
 
-// const agent = createReactAgent({
-//     llm,
-//     tools: []
-// })
+// console.log(retrieveDocs);
 
-// const results = await agent.invoke({
-//     messages: [{role: "user", content: "What is Generative AI?"}]
-// })
+//retrieval tools
+const retrievalTools = tool(
+    async ({ query }) => {
+        const docs = await vectorstore.similaritySearch(query, 3)
+        const serializedDocs = docs.map((doc) => doc.pageContent).join('\n')
+        return serializedDocs
+    },
+    {
+        name: 'retrieve',
+        description: 'Retrieve the most relevent chunk of text from the transcript of a youtube video',
+        schema: z.object({
+            query: z.string(),
+        })
+    }
+)
 
-// console.log(results);
+const llm = new ChatMistralAI({
+    apiKey: process.env.MISTRAL_API_KEY,
+    modelName: "mistral-small-2506"
+})
 
-// console.log(results.messages.at(-1).content);
+const agent = createReactAgent({
+    llm,
+    tools: [retrievalTools]
+})
 
+const results = await agent.invoke({
+    messages: [{ role: "user", content: "What was Norris's grid position?" }]
+})
 
+console.log(results);
 
+console.log(results.messages.at(-1).content);
