@@ -14,7 +14,7 @@ dotenv.config();
 
 async function run() {
     // Load the PDF and extract text
-    const parser = new PDFParse({ url: 'dummyData/GRU.pdf' });
+    const parser = new PDFParse({ url: '../dummyData/GRU.pdf' });
     const pdfData = await parser.getText();
     const pdfText = pdfData.text;
 

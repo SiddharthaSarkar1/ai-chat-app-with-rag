@@ -7,7 +7,7 @@ import { MistralAIEmbeddings } from "@langchain/mistralai";
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
 import { tool } from '@langchain/core/tools';
 
-import data from "./dummyData/data.js"
+import data from "../dummyData/data.js"
 import z from "zod";
 import { MemorySaver } from '@langchain/langgraph';
 
@@ -64,19 +64,15 @@ const llm = new ChatMistralAI({
     modelName: "mistral-small-2506"
 })
 
-const memorySaver = new MemorySaver()
+// const memorySaver = new MemorySaver()
 
 const agent = createReactAgent({
     llm,
-    tools: [retrievalTools],
-    checkpointer: memorySaver
+    tools: [retrievalTools]
 })
 
 const results = await agent.invoke({
     messages: [{ role: "user", content: "What was Norris's grid position?" }]
-},
-{
-    configurable: { thread_id: 1, video_id }
 }
 )
 
