@@ -2,6 +2,9 @@ import { MistralAIEmbeddings } from "@langchain/mistralai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Document } from '@langchain/core/documents';
 import { PGVectorStore } from '@langchain/community/vectorstores/pgvector';
+import dotenv from "dotenv";
+
+dotenv.config()
 
 const embeddings = new MistralAIEmbeddings({
     apiKey: process.env.MISTRAL_API_KEY,
@@ -10,7 +13,7 @@ const embeddings = new MistralAIEmbeddings({
 
 export const vectorStore = await PGVectorStore.initialize(embeddings, {
     postgresConnectionOptions: {
-      connectionString: process.env.DB_URL,
+      connectionString: process.env.DATABASE_URL,
     },
     tableName: 'transcripts',
     columns: {

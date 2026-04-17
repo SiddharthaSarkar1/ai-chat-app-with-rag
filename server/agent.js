@@ -1,85 +1,118 @@
-import dotenv from "dotenv";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
-import { Document } from "@langchain/core/documents";
 import { MistralAIEmbeddings } from "@langchain/mistralai";
-import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
-import { tool } from '@langchain/core/tools';
-
-import data from "./dummyData/data.js"
-import z from "zod";
-import { MemorySaver } from '@langchain/langgraph';
-
+import {
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+} from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import {
+    RunnablePassthrough,
+    RunnableSequence,
+} from "@langchain/core/runnables";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { PGVectorStore } from '@langchain/community/vectorstores/pgvector';
+import dotenv from "dotenv";
 
 dotenv.config();
 
-const video1 = data[0]
-
-const docs = [new Document({ pageContent: video1.transcript, metadata: { video_id: video1.video_id } })]
-
-const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200
-})
-
-const chunks = await splitter.splitDocuments(docs)
+const llm = new ChatMistralAI({
+    apiKey: process.env.MISTRAL_API_KEY,
+    model: "mistral-small-latest",
+    temperature: 0,
+});
 
 const embeddings = new MistralAIEmbeddings({
     apiKey: process.env.MISTRAL_API_KEY,
     model: "mistral-embed",
 });
 
-const vectorstore = new MemoryVectorStore(embeddings)
+let retriever;
 
-await vectorstore.addDocuments(chunks)
+// This helper function replaces the broken import
+const formatDocs = (docs) => {
+    return docs.map((doc) => doc.pageContent).join("\n\n");
+};
 
-// const retrieveDocs = await vectorstore.similaritySearch(
-//     "What was the finish time of Norris?",
-//     1
-// )
+export const createAgent = async (text) => {
+    console.log("Splitting text...");
+    const textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1000,
+        chunkOverlap: 200,
+    });
+    const docs = await textSplitter.createDocuments([text]);
 
-// console.log(retrieveDocs);
+    console.log("Creating and populating vector store...");
 
-//retrieval tools
-const retrievalTools = tool(
-    async ({ query }) => {
-        console.log("Retrieving documents for query===================");
-        
-        const docs = await vectorstore.similaritySearch(query, 3)
-        const serializedDocs = docs.map((doc) => doc.pageContent).join('\n')
-        return serializedDocs
-    },
-    {
-        name: 'retrieve',
-        description: 'Retrieve the most relevent chunk of text from the transcript of a youtube video',
-        schema: z.object({
-            query: z.string(),
-        })
+    const vectorStore = await PGVectorStore.fromDocuments(docs, embeddings, {
+        postgresConnectionOptions: {
+            connectionString: process.env.DATABASE_URL,
+        },
+        tableName: 'transcripts',
+        // --- THIS IS THE FIX ---
+        // Explicitly tell PGVectorStore what to name the content column.
+        // This ensures the column is created with this name AND the insert uses this name.
+        contentColumnName: 'content', 
+        // -----------------------
+        ensureTableInDatabase: true, 
+    });
+
+    console.log("Vector store created and populated successfully.");
+
+    retriever = vectorStore.asRetriever();
+    console.log("Retriever created successfully.");
+};
+
+const contextualizeQSystemPrompt = `Given a chat history and the latest user question
+which might reference context in the chat history, formulate a standalone question
+which can be understood without the chat history. Do NOT answer the question,
+just reformulate it if needed and otherwise return it as is.`;
+
+const contextualizeQPrompt = ChatPromptTemplate.fromMessages([
+    ["system", contextualizeQSystemPrompt],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{input}"],
+]);
+
+const qaSystemPrompt = `You are an assistant for question-answering tasks.
+Use the following pieces of retrieved context to answer the question.
+If you don't know the answer, just say that you don't know.
+Use three sentences maximum and keep the answer concise.
+
+{context}`;
+
+const qaPrompt = ChatPromptTemplate.fromMessages([
+    ["system", qaSystemPrompt],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{input}"],
+]);
+
+export const invokeAgent = async (input, chat_history) => {
+    if (!retriever) {
+        throw new Error("Retriever not initialized. Please upload a PDF first.");
     }
-)
 
-const llm = new ChatMistralAI({
-    apiKey: process.env.MISTRAL_API_KEY,
-    modelName: "mistral-small-2506"
-})
+    const contextualizeQChain = RunnableSequence.from([
+        {
+            input: (input) => input.input,
+            chat_history: (input) => input.chat_history,
+        },
+        contextualizeQPrompt,
+        llm,
+        new StringOutputParser(),
+    ]);
 
-const memorySaver = new MemorySaver()
+    const ragChain = RunnableSequence.from([
+        RunnablePassthrough.assign({
+            context: (input) =>
+                contextualizeQChain.pipe(retriever).pipe(formatDocs).invoke(input),
+        }),
+        qaPrompt,
+        llm,
+        new StringOutputParser(),
+    ]);
 
-const agent = createReactAgent({
-    llm,
-    tools: [retrievalTools],
-    checkpointer: memorySaver
-})
-
-const results = await agent.invoke({
-    messages: [{ role: "user", content: "What was Norris's grid position?" }]
-},
-{
-    configurable: { thread_id: 1, video_id }
-}
-)
-
-console.log(results);
-
-console.log(results.messages.at(-1).content);
+    return ragChain.invoke({
+        input: input,
+        chat_history: chat_history,
+    });
+};
