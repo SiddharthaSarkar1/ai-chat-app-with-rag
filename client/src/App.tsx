@@ -1,64 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import './index.css';
+import { PdfUpload } from './components/PDFUpload';
+import Header from './components/Header';
+import api from './config/axios';
 
-interface Message {
+export interface Message {
   id: number;
   text: string;
   isUser: boolean;
 }
-
-// New component for PDF Upload
-const PdfUpload = ({ onUploadSuccess, setIsLoading }: { onUploadSuccess: () => void, setIsLoading: (isLoading: boolean) => void }) => {
-  const [file, setFile] = useState<File | null>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      alert("Please select a file first!");
-      return;
-    }
-
-    setIsLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('File upload failed');
-      }
-
-      const result = await response.json();
-      console.log('Upload successful:', result);
-      alert('PDF processed successfully! You can now ask questions.');
-      onUploadSuccess(); // Notify the parent component
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('There was an error uploading or processing the PDF.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className='pdf-upload-container'>
-      <h2>Upload PDF for RAG</h2>
-      <p>Upload a PDF document to start asking questions about its content.</p>
-      <input type="file" accept=".pdf" onChange={handleFileChange} />
-      <button onClick={handleUpload} disabled={!file}>Upload and Process PDF</button>
-    </div>
-  );
-}
-
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -140,35 +90,38 @@ function App() {
     }
   };
 
-  const resetChat = () => {
-    setMessages([]);
-    setThreadId(Date.now());
-    setIsPdfReady(false); // Reset the PDF state as well
-  };
+  const resetDatabase = async () => {
+    try {
+      const confirm = window.confirm(
+        "Are you sure you want to delete the data from database?"
+      );
+      if (!confirm) return;
+
+      const { data } = await api.post(
+        `/api/reset`
+      );
+
+      window.alert(data);
+
+    } catch (error: any) {
+      console.error("error in resetDatabase method");
+      console.log(error?.response?.data?.message ||
+        error?.message ||
+        "Something went wrong")
+    }
+  }
 
   return (
     <div className='chat-container'>
-      <header className='chat-header'>
-        <h1>RAG App</h1>
-        <button className='reset-button' onClick={resetChat}>
-          <svg
-            width='16'
-            height='16'
-            viewBox='0 0 16 16'
-            fill='none'
-            xmlns='http://www.w3.org/2000/svg'
-          >
-            <path
-              d='M8 3V1L4 5L8 9V7C10.21 7 12 8.79 12 11C12 13.21 10.21 15 8 15C5.79 15 4 13.21 4 11H2C2 14.31 4.69 17 8 17C11.31 17 14 14.31 14 11C14 7.69 11.31 5 8 5V3Z'
-              fill='currentColor'
-            />
-          </svg>
-          New Chat
-        </button>
-      </header>
+      <Header
+        setMessages={setMessages}
+        setThreadId={setThreadId}
+        setIsPdfReady={setIsPdfReady}
+        resetDatabase={resetDatabase}
+      />
 
       {!isPdfReady ? (
-         <PdfUpload onUploadSuccess={() => setIsPdfReady(true)} setIsLoading={setIsLoading} />
+        <PdfUpload onUploadSuccess={() => setIsPdfReady(true)} setIsLoading={setIsLoading} />
       ) : (
         <>
           <div className='messages-container'>
@@ -232,7 +185,7 @@ function App() {
             </button>
           </div>
         </>
-       )}
+      )}
     </div>
   );
 }

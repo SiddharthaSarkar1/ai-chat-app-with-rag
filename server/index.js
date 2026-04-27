@@ -4,10 +4,15 @@ import multer from 'multer';
 import { PDFParse } from 'pdf-parse';
 import { createAgent, invokeAgent } from './agent.js';
 import dotenv from "dotenv";
+import { Pool } from 'pg';
 
 dotenv.config();
 
 let chat_history = [];
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+});
 
 const PORT = process.env.PORT || 3000;
 
@@ -25,6 +30,10 @@ app.use(cors());
 app.get("/api/", (req, res) => {
     res.send("Hello World!");
 });
+
+app.get("/api/healthz", (req, res) => {
+    res.status(200).json({ status: "OK" })
+})
 
 // New endpoint for handling PDF uploads
 app.post('/upload', upload.single('file'), async (req, res) => {
@@ -65,6 +74,24 @@ app.post("/generate", async (req, res) => {
     } catch (error) {
         console.error("Error during generation:", error);
         res.status(500).send(error.message);
+    }
+});
+
+app.post("/api/reset", async (req, res) => {
+    console.log("Received request to reset database...");
+    try {
+        const client = await pool.connect();
+        console.log("Executing DROP TABLE command...");
+        await client.query('DROP TABLE IF EXISTS transcripts;');
+        client.release();
+
+        chat_history = []; // Also reset the in-memory chat history
+
+        console.log("Database reset successfully.");
+        res.status(200).send("Database and chat history have been reset.");
+    } catch (error) {
+        console.error("Error resetting database:", error);
+        res.status(500).send("Failed to reset the database.");
     }
 });
 

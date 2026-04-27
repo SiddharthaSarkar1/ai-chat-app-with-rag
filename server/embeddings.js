@@ -1,6 +1,4 @@
 import { MistralAIEmbeddings } from "@langchain/mistralai";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { Document } from '@langchain/core/documents';
 import { PGVectorStore } from '@langchain/community/vectorstores/pgvector';
 import dotenv from "dotenv";
 
@@ -25,23 +23,3 @@ export const vectorStore = await PGVectorStore.initialize(embeddings, {
     distanceStrategy: 'cosine',
   });
 
-export const addYTVideoToVectorStore = async (videoData) => {
-    const { transcript, video_id } = videoData;
-
-    const docs = [
-        new Document({
-            pageContent: transcript,
-            metadata: { video_id },
-        }),
-    ];
-
-    // Split the video into chunks
-    const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-        chunkOverlap: 200,
-    });
-
-    const chunks = await splitter.splitDocuments(docs);
-
-    await vectorStore.addDocuments(chunks);
-};

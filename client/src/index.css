@@ -243,3 +243,23 @@ textarea::placeholder {
     font-size: 0.6rem;
   }
 }
+
+.pdf-upload-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 15px;
+  height: 60vh;
+  gap: 12px
+}
+
+.upload-button{
+  font-size: 1rem;
+  padding: 15px;
+  cursor: pointer;
+  background-color: rgb(255, 138, 95);
+  color: #fff;
+  border-radius: 12px;
+  border: 1px solid #fff;
+}
