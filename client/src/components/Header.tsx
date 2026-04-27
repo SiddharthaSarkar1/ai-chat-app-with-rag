@@ -1,6 +1,7 @@
 import type React from "react";
 import type { Message } from "../App";
 import { RotateCcw } from "lucide-react";
+import api from "../config/axios";
 
 interface HeaderProps {
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -12,7 +13,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady, resetDatabase }) => {
 
     const resetChat = () => {
-        resetDatabase();
+        resetDatabaseRecord();
         setMessages([]);
         setThreadId(Date.now());
         setIsPdfReady(false); // Reset the PDF state as well
@@ -20,6 +21,17 @@ const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady
 
     const handleResetDatabase = () => {
         resetDatabase();
+    }
+
+    const resetDatabaseRecord = async () => {
+        try {
+            const { data } = await api.post(
+                `/api/reset`
+            );
+            console.log(data);
+        } catch (error) {
+            console.error(error)
+        }
     }
 
     return (
