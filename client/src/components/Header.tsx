@@ -12,6 +12,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady, resetDatabase }) => {
 
     const resetChat = () => {
+        resetDatabase();
         setMessages([]);
         setThreadId(Date.now());
         setIsPdfReady(false); // Reset the PDF state as well
