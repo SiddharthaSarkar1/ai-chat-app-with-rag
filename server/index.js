@@ -1,3 +1,4 @@
+
 import express from "express";
 import cors from "cors";
 import multer from 'multer';
@@ -12,6 +13,11 @@ let chat_history = [];
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+});
+
+// Add an error handler to the pool to prevent crashes from idle timeouts
+pool.on('error', (err, client) => {
+  console.error('PostgreSQL Pool: Unexpected error on idle client', err);
 });
 
 const PORT = process.env.PORT || 3000;
@@ -43,14 +49,11 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
     try {
         console.log("Processing PDF...");
-        // SOLUTION: Convert the Buffer from multer into a Uint8Array.
         const uint8Array = new Uint8Array(req.file.buffer);
-        // Now, pass the Uint8Array to the constructor. This will work.
         const parser = new PDFParse(uint8Array);
         const pdfData = await parser.getText();
         console.log("PDF text extracted, creating agent...");
         await createAgent(pdfData.text); // Create the RAG agent
-        // I've also kept your original response message and added a history reset
         chat_history = [];
         res.status(200).json({ message: 'PDF processed and RAG agent is ready.' });
 

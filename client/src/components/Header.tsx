@@ -8,9 +8,10 @@ interface HeaderProps {
     setThreadId: React.Dispatch<React.SetStateAction<number>>;
     setIsPdfReady: React.Dispatch<React.SetStateAction<boolean>>;
     resetDatabase: () => void;
+    isPdfReady: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady, resetDatabase }) => {
+const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady, resetDatabase, isPdfReady }) => {
 
     const resetChat = () => {
         resetDatabaseRecord();
@@ -21,6 +22,9 @@ const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady
 
     const handleResetDatabase = () => {
         resetDatabase();
+        setMessages([]);
+        setThreadId(Date.now());
+        setIsPdfReady(false);
     }
 
     const resetDatabaseRecord = async () => {
@@ -37,8 +41,8 @@ const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady
     return (
         <>
             <header className='chat-header'>
-                <h1>RAG App</h1>
-                <button className='reset-button' onClick={resetChat}>
+                <h1>DocuChat AI</h1>
+                {isPdfReady && <button className='reset-button' onClick={resetChat}>
                     <svg
                         width='16'
                         height='16'
@@ -52,11 +56,11 @@ const Header: React.FC<HeaderProps> = ({ setMessages, setThreadId, setIsPdfReady
                         />
                     </svg>
                     New Chat
-                </button>
-                <button className='reset-button' onClick={handleResetDatabase}>
+                </button>}
+                {isPdfReady && <button className='reset-button' onClick={handleResetDatabase}>
                     <RotateCcw />
                     Reset DB
-                </button>
+                </button>}
             </header>
         </>
     )

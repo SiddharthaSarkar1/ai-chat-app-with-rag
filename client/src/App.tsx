@@ -112,81 +112,96 @@ function App() {
   }
 
   return (
-    <div className='chat-container'>
-      <Header
-        setMessages={setMessages}
-        setThreadId={setThreadId}
-        setIsPdfReady={setIsPdfReady}
-        resetDatabase={resetDatabase}
-      />
+    <>
+      <div className='chat-container'>
+        <Header
+          setMessages={setMessages}
+          setThreadId={setThreadId}
+          setIsPdfReady={setIsPdfReady}
+          resetDatabase={resetDatabase}
+          isPdfReady={isPdfReady}
+        />
 
-      {!isPdfReady ? (
-        <PdfUpload onUploadSuccess={() => setIsPdfReady(true)} setIsLoading={setIsLoading} />
-      ) : (
-        <>
-          <div className='messages-container'>
-            {messages.length === 0 ? (
-              <div className='empty-state'>
-                <p>PDF processed. Ask a question to get started.</p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message ${message.isUser ? 'user-message' : 'ai-message'
-                    }`}
-                >
-                  <div className='message-avatar'>
-                    {message.isUser ? 'You' : 'AI'}
+        {!isPdfReady ? (
+          <PdfUpload onUploadSuccess={() => setIsPdfReady(true)} setIsLoading={setIsLoading} />
+        ) : (
+          <>
+            <div className='messages-container'>
+              {messages.length === 0 ? (
+                <div className='empty-state'>
+                  <p>PDF processed. Ask a question to get started.</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`message ${message.isUser ? 'user-message' : 'ai-message'
+                      }`}
+                  >
+                    <div className='message-avatar'>
+                      {message.isUser ? 'You' : 'AI'}
+                    </div>
+                    <div className='message-content'>{message.text}</div>
                   </div>
-                  <div className='message-content'>{message.text}</div>
+                ))
+              )}
+              {isLoading && (
+                <div className='message ai-message'>
+                  <div className='message-avatar'>AI</div>
+                  <div className='message-content loading'>
+                    <span className='dot'></span>
+                    <span className='dot'></span>
+                    <span className='dot'></span>
+                  </div>
                 </div>
-              ))
-            )}
-            {isLoading && (
-              <div className='message ai-message'>
-                <div className='message-avatar'>AI</div>
-                <div className='message-content loading'>
-                  <span className='dot'></span>
-                  <span className='dot'></span>
-                  <span className='dot'></span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
 
-          <div className='input-container'>
-            <textarea
-              value={inputText}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={isPdfReady ? 'Type your message...' : 'Please upload a PDF to begin'}
-              disabled={isLoading || !isPdfReady}
-              rows={1}
-            />
-            <button
-              className='send-button'
-              onClick={sendMessage}
-              disabled={inputText.trim() === '' || isLoading || !isPdfReady}
-            >
-              <svg
-                width='24'
-                height='24'
-                viewBox='0 0 24 24'
-                fill='none'
-                xmlns='http://www.w3.org/2000/svg'
+            <div className='input-container'>
+              <textarea
+                value={inputText}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder={isPdfReady ? 'Type your message...' : 'Please upload a PDF to begin'}
+                disabled={isLoading || !isPdfReady}
+                rows={1}
+              />
+              <button
+                className='send-button'
+                onClick={sendMessage}
+                disabled={inputText.trim() === '' || isLoading || !isPdfReady}
               >
-                <path
-                  d='M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z'
-                  fill='currentColor'
-                />
-              </svg>
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+                <svg
+                  width='24'
+                  height='24'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  xmlns='http://www.w3.org/2000/svg'
+                >
+                  <path
+                    d='M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z'
+                    fill='currentColor'
+                  />
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="footer-credit">
+        <p>
+          © Made with ❤️ by{" "}
+          <a
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Siddhartha
+          </a>{" "}🙇{" "}
+        </p>
+      </div>
+    </>
   );
 }
 

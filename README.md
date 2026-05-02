@@ -1,6 +1,8 @@
-# Full Stack RAG with React, Node.js, and LangChain
+# DOCUCHAT RAG Explorer
 
-This project is a full-stack Retrieval-Augmented Generation (RAG) application that allows you to chat with your documents. It features a React frontend and a Node.js backend, leveraging the power of LangChain.js and Mistral AI.
+Leverage the power of Retrieval-Augmented Generation to explore any PDF document. RAG Explorer helps you navigate dense reports, textbooks, and articles with simple questions.
+
+This project is a full-stack RAG application featuring a React frontend and a Node.js backend, leveraging the power of LangChain.js and Mistral AI to allow you to chat with your documents.
 
 ## Features
 
@@ -17,13 +19,3 @@ This project is a full-stack Retrieval-Augmented Generation (RAG) application th
 *   **AI:** LangChain.js, Mistral AI
 *   **Database:** PostgreSQL 
 *   **Embeddings:** Mistral AI Embeddings
-
----
-
-## Getting Started
-
-### Prerequisites
-
-*   Node.js and npm installed.
-*   A Mistral AI API Key.
-*   A PostgreSQL database.
