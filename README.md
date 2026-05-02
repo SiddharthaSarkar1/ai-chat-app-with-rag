@@ -14,7 +14,7 @@ This project is a full-stack RAG application featuring a React frontend and a No
 
 ## Tech Stack
 
-*   **Frontend:** React
+*   **Frontend:** React, Typescript
 *   **Backend:** Node.js, Express.js
 *   **AI:** LangChain.js, Mistral AI
 *   **Database:** PostgreSQL 
